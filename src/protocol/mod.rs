@@ -1,16 +1,40 @@
 use anyhow::Error;
 use bytes::BytesMut;
-use types::{NullableString, NullableStringError};
+use types::nullstring::{NullableString, NullableStringError};
+
+use crate::rpc::encode::Encode;
 
 pub mod types;
 
+pub struct ResponseBase {
+    pub size: i32,
+    pub correlation_id: i32,
+}
+
+impl ResponseBase {
+    #[must_use]
+    pub fn new(size: i32, correlation_id: i32) -> ResponseBase {
+        ResponseBase {
+            size,
+            correlation_id,
+        }
+    }
+}
+
+impl Encode for ResponseBase {
+    fn encode(&self, buf: &mut BytesMut) {
+        self.size.encode(buf);
+        self.correlation_id.encode(buf);
+    }
+}
+
 pub struct RequestBase {
-    size: i32,
-    api_key: i16,
-    api_version: i16,
-    correlation_id: i32,
-    client_id: NullableString,
-    base_size: i16,
+    pub size: i32,
+    pub api_key: i16,
+    pub api_version: i16,
+    pub correlation_id: i32,
+    pub client_id: NullableString,
+    pub base_size: i16,
 }
 
 impl RequestBase {

@@ -106,6 +106,7 @@ impl NullableString {
         })
     }
 
+    #[must_use]
     pub fn new_empty() -> NullableString {
         NullableString {
             value: String::new(),

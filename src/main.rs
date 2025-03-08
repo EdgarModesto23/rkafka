@@ -1,4 +1,6 @@
 use bytes::BytesMut;
+use codecrafters_kafka::protocol::{self, RequestBase, ResponseBase};
+use codecrafters_kafka::rpc::encode::Encode;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
@@ -22,21 +24,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("Connection closed by client.");
                         return;
                     }
-                    Ok(n) => {
-                        println!("Read {n} bytes from the socket");
-                        n
-                    }
+                    Ok(n) => n,
                     Err(e) => {
                         eprintln!("failed to read from socket; err = {e:?}");
                         return;
                     }
                 };
 
-                let mut res = BytesMut::with_capacity(8);
+                let base_request = if let Ok(val) = RequestBase::new(&buf) {
+                    val
+                } else {
+                    eprintln!("Failed to parse request");
+                    return;
+                };
 
-                res.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 7]);
+                let mut res_buf = BytesMut::new();
 
-                if let Err(e) = socket.write_all(&res[..]).await {
+                let res = ResponseBase::new(0, base_request.correlation_id);
+
+                res.encode(&mut res_buf);
+
+                println!("{res_buf:?}");
+
+                if let Err(e) = socket.write_all(&res_buf).await {
                     eprintln!("failed to write to socket; err = {e:?}");
                     break;
                 }
