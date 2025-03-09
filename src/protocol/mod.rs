@@ -4,6 +4,7 @@ use types::nullstring::{NullableString, NullableStringError};
 
 use crate::rpc::encode::Encode;
 
+pub mod schema;
 pub mod types;
 
 pub struct ResponseBase {

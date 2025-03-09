@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use codecrafters_kafka::protocol::{self, RequestBase, ResponseBase};
+use codecrafters_kafka::protocol::{RequestBase, ResponseBase};
 use codecrafters_kafka::rpc::encode::Encode;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
@@ -43,8 +43,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let res = ResponseBase::new(0, base_request.correlation_id);
 
                 res.encode(&mut res_buf);
-
-                println!("{res_buf:?}");
 
                 if let Err(e) = socket.write_all(&res_buf).await {
                     eprintln!("failed to write to socket; err = {e:?}");
