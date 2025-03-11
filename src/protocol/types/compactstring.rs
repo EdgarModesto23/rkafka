@@ -4,7 +4,7 @@ pub struct CompactString {
     pub size_len_bytes: u64,
 }
 
-use std::str;
+use std::{fmt::Display, str};
 
 use crate::rpc::decode::{Decode, DecodeError};
 
@@ -13,6 +13,22 @@ pub enum CompactStringParseError {
     InvalidVarint,
     InvalidUtf8(str::Utf8Error),
     InvalidLengthPrefix,
+}
+
+impl Display for CompactStringParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::InvalidVarint => {
+                write!(f, "The value parsed is not a valid compact string")
+            }
+            Self::InvalidUtf8(error) => {
+                write!(f, "The format parsed is not valid UTF8: {error:?}")
+            }
+            Self::InvalidLengthPrefix => {
+                write!(f, "Parsed length is bigger than the buffer available")
+            }
+        }
+    }
 }
 
 fn decode_varint(data: &[u8]) -> Result<(u64, usize), CompactStringParseError> {

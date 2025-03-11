@@ -1,7 +1,7 @@
 use bytes::BytesMut;
-use codecrafters_kafka::protocol::{RequestBase, ResponseBase};
-use codecrafters_kafka::rpc::encode::Encode;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use codecrafters_kafka::handler::dispatch_request;
+use codecrafters_kafka::protocol::RequestBase;
+use tokio::io::AsyncReadExt;
 use tokio::net::TcpListener;
 
 static SERVER_ADDRESS: &str = "127.0.0.1:9092";
@@ -38,17 +38,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     return;
                 };
 
-                let mut res_buf = BytesMut::new();
-
-                let res = ResponseBase::new(0, base_request.correlation_id);
-
-                res.encode(&mut res_buf);
-
-                if let Err(e) = socket.write_all(&res_buf).await {
-                    eprintln!("failed to write to socket; err = {e:?}");
-                    break;
-                }
-                let _ = socket.flush().await;
+                dispatch_request(base_request, &mut buf, &mut socket).await;
             }
         });
     }
