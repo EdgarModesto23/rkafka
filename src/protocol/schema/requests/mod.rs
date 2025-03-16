@@ -5,6 +5,8 @@ use apiversions::SupportedVersionsKey;
 
 pub mod apiversions;
 
+pub mod describetopic;
+
 /// Checks if a given version is supported for a specific key.
 ///
 /// This function reads a JSON file (`supported_versions.json`) which contains a list

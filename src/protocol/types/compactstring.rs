@@ -8,14 +8,16 @@ use std::{fmt::Display, str};
 
 use crate::rpc::decode::{Decode, DecodeError};
 
+use super::{decode_varint, Offset};
+
 #[derive(Debug, PartialEq)]
-pub enum CompactStringParseError {
+pub enum CompactValueParseError {
     InvalidVarint,
     InvalidUtf8(str::Utf8Error),
     InvalidLengthPrefix,
 }
 
-impl Display for CompactStringParseError {
+impl Display for CompactValueParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::InvalidVarint => {
@@ -29,29 +31,6 @@ impl Display for CompactStringParseError {
             }
         }
     }
-}
-
-fn decode_varint(data: &[u8]) -> Result<(u64, usize), CompactStringParseError> {
-    let mut value = 0u64;
-    let mut shift = 0;
-    let mut i = 0;
-
-    while i < data.len() {
-        let byte = data[i];
-        value |= ((byte & 0x7F) as u64) << shift;
-        shift += 7;
-        i += 1;
-
-        if byte & 0x80 == 0 {
-            return Ok((value, i));
-        }
-
-        if shift >= 64 {
-            return Err(CompactStringParseError::InvalidVarint);
-        }
-    }
-
-    Err(CompactStringParseError::InvalidVarint)
 }
 
 impl CompactString {
@@ -79,11 +58,11 @@ impl CompactString {
     /// - The length encoded in the buffer is larger than the available bytes in the buffer.
     /// - The buffer does not contain a valid UTF-8 string.
     ///
-    pub fn get(buf: &[u8]) -> Result<(String, u64), CompactStringParseError> {
+    pub fn get(buf: &[u8]) -> Result<(String, u64), CompactValueParseError> {
         let (length, varint_bytes_read) = decode_varint(buf)?;
 
         if length > (buf.len() - varint_bytes_read) as u64 {
-            return Err(CompactStringParseError::InvalidLengthPrefix);
+            return Err(CompactValueParseError::InvalidLengthPrefix);
         }
 
         let total_bytes_read = varint_bytes_read as u64 + length;
@@ -92,7 +71,7 @@ impl CompactString {
 
         match str::from_utf8(string_bytes) {
             Ok(s) => Ok((s.to_string(), total_bytes_read)),
-            Err(e) => Err(CompactStringParseError::InvalidUtf8(e)),
+            Err(e) => Err(CompactValueParseError::InvalidUtf8(e)),
         }
     }
 
@@ -115,13 +94,25 @@ impl CompactString {
     /// - The length encoded in the buffer is invalid or exceeds the remaining buffer size.
     /// - The UTF-8 decoding of the string fails.
     ///
-    pub fn new(buf: &[u8]) -> Result<CompactString, CompactStringParseError> {
+    pub fn new(buf: &[u8]) -> Result<CompactString, CompactValueParseError> {
         let (value, size_len_bytes) = Self::get(buf)?;
         Ok(CompactString {
             size: value.len(),
             value,
             size_len_bytes,
         })
+    }
+}
+
+impl Decode<CompactString> for CompactString {
+    fn decode(buf: &[u8]) -> Result<CompactString, crate::rpc::decode::DecodeError> {
+        // Assuming CompactString has a constructor `new` that takes a buffer and parses it
+        match CompactString::new(buf) {
+            Ok(val) => Ok(val),
+            Err(e) => Err(DecodeError::InvalidBuffer(format!(
+                "Could not parse compact string from buffer: {e:?}",
+            ))),
+        }
     }
 }
 
@@ -133,6 +124,12 @@ impl Decode<CompactString> for [u8] {
                 "Could not parse compact string from buffer: {e:?}",
             ))),
         }
+    }
+}
+
+impl Offset for CompactString {
+    fn get_offset(&self) -> u64 {
+        self.size_len_bytes
     }
 }
 
@@ -222,7 +219,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
-            CompactStringParseError::InvalidLengthPrefix
+            CompactValueParseError::InvalidLengthPrefix
         );
     }
 
@@ -256,7 +253,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
-            CompactStringParseError::InvalidLengthPrefix
+            CompactValueParseError::InvalidLengthPrefix
         );
     }
 }

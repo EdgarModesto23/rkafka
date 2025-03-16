@@ -7,7 +7,7 @@ use bytes::{BufMut, BytesMut};
 use crate::{
     protocol::{
         schema::Respond,
-        types::compactstring::{CompactString, CompactStringParseError},
+        types::compactstring::{CompactString, CompactValueParseError},
         RequestBase,
     },
     rpc::{decode::DecodeError, encode::Encode},
@@ -79,10 +79,7 @@ impl ApiVersionRequest {
     /// The function may return a `CompactStringParseError` if the parsing of the `client_software_name`
     /// or `client_software_version` fails. This could occur if the buffer is malformed or does not
     /// contain the expected data for either field.
-    pub fn new(
-        base: RequestBase,
-        buf: &[u8],
-    ) -> Result<ApiVersionRequest, CompactStringParseError> {
+    pub fn new(base: RequestBase, buf: &[u8]) -> Result<ApiVersionRequest, CompactValueParseError> {
         let client_software_name = CompactString::new(buf)?;
         let client_software_version =
             CompactString::new(&buf[client_software_name.size_len_bytes as usize..])?;
@@ -124,7 +121,6 @@ impl Respond for ApiVersionRequest {
                 )))
             }
         };
-        println!("{res_size:?}");
         res_size.encode(&mut response);
         self.base_request.correlation_id.encode(&mut response);
         response.put_slice(&error.to_be_bytes());
