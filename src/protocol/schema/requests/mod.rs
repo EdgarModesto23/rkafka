@@ -71,7 +71,8 @@ mod tests {
             },
         ];
 
-        let file = File::create("supported_versions.json").expect("Failed to create mock file");
+        let file =
+            File::create("supported_versions_valid.json").expect("Failed to create mock file");
         serde_json::to_writer(file, &mock_data).expect("Failed to write mock data");
     }
 
@@ -79,15 +80,15 @@ mod tests {
     fn test_version_supported() {
         create_mock_supported_versions_json();
 
-        let result = is_version_supported("supported_versions.json", 1, 3);
+        let result = is_version_supported("supported_versions_valid.json", 1, 3);
         assert!(result.unwrap());
 
-        let result = is_version_supported("supported_versions.json", 1, 6);
+        let result = is_version_supported("supported_versions_valid.json", 1, 6);
         assert!(!result.unwrap());
-        let result = is_version_supported("supported_versions.json", 2, 7);
+        let result = is_version_supported("supported_versions_valid.json", 2, 7);
         assert!(result.unwrap());
 
-        let result = is_version_supported("supported_versions.json", 2, 2);
+        let result = is_version_supported("supported_versions_valid.json", 2, 2);
         assert!(!result.unwrap());
     }
 
@@ -95,13 +96,13 @@ mod tests {
     fn test_version_not_supported() {
         create_mock_supported_versions_json();
 
-        let result = is_version_supported("supported_versions.json", 1, 6);
+        let result = is_version_supported("supported_versions_valid.json", 1, 6);
         assert!(!result.unwrap());
 
-        let result = is_version_supported("supported_versions.json", 2, 8);
+        let result = is_version_supported("supported_versions_valid.json", 2, 8);
         assert!(!result.unwrap());
 
-        let _ = remove_file("supported_versions.json");
+        let _ = remove_file("supported_versions_valid.json");
     }
 
     #[test]
