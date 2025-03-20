@@ -1,8 +1,10 @@
+use bytes::BytesMut;
 use compactstring::CompactValueParseError;
 
 pub mod compactarray;
 pub mod compactstring;
 pub mod nullstring;
+pub mod topicstr;
 
 pub trait Offset {
     fn get_offset(&self) -> u64;
@@ -30,4 +32,21 @@ pub fn decode_varint(data: &[u8]) -> Result<(u64, usize), CompactValueParseError
     }
 
     Err(CompactValueParseError::InvalidVarint)
+}
+
+pub fn encode_zigzag(value: u64) -> Vec<u8> {
+    let mut result = Vec::new();
+    let mut value = value;
+
+    while value >= 0x80 {
+        result.push(((value & 0x7F) | 0x80) as u8);
+        value >>= 7;
+    }
+
+    result.push(value as u8);
+    result
+}
+
+pub trait CompactEncode {
+    fn encode_compact(&self, buf: &mut BytesMut);
 }

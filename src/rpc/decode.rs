@@ -1,10 +1,11 @@
-use std::{error::Error, fmt};
+use std::fmt;
 
+use thiserror::Error;
+
+#[derive(Error)]
 pub enum DecodeError {
     InvalidBuffer(String),
 }
-
-impl Error for DecodeError {}
 
 impl fmt::Display for DecodeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

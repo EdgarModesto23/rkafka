@@ -4,13 +4,32 @@ pub struct CompactString {
     pub size_len_bytes: u64,
 }
 
-use std::{fmt::Display, str};
+impl Debug for CompactString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CompactString")
+            .field("value", &self.value)
+            .field("size", &self.size)
+            .field("size_len_bytes", &self.size_len_bytes)
+            .finish()
+    }
+}
 
-use crate::rpc::decode::{Decode, DecodeError};
+use std::{
+    fmt::{Debug, Display},
+    str,
+};
 
-use super::{decode_varint, Offset};
+use bytes::BufMut;
+use thiserror::Error;
 
-#[derive(Debug, PartialEq)]
+use crate::rpc::{
+    decode::{Decode, DecodeError},
+    encode::Encode,
+};
+
+use super::{decode_varint, encode_zigzag, CompactEncode, Offset};
+
+#[derive(Error, Debug, PartialEq)]
 pub enum CompactValueParseError {
     InvalidVarint,
     InvalidUtf8(str::Utf8Error),
@@ -69,6 +88,8 @@ impl CompactString {
 
         let string_bytes = &buf[varint_bytes_read..(varint_bytes_read + length as usize)];
 
+        println!("{string_bytes:?}");
+
         match str::from_utf8(string_bytes) {
             Ok(s) => Ok((s.to_string(), total_bytes_read)),
             Err(e) => Err(CompactValueParseError::InvalidUtf8(e)),
@@ -96,6 +117,7 @@ impl CompactString {
     ///
     pub fn new(buf: &[u8]) -> Result<CompactString, CompactValueParseError> {
         let (value, size_len_bytes) = Self::get(buf)?;
+        println!("{value:?}");
         Ok(CompactString {
             size: value.len(),
             value,
@@ -113,6 +135,22 @@ impl Decode<CompactString> for CompactString {
                 "Could not parse compact string from buffer: {e:?}",
             ))),
         }
+    }
+}
+
+impl Encode for CompactString {
+    fn encode(&self, buf: &mut bytes::BytesMut) {
+        buf.put(&self.size.to_be_bytes()[..]);
+        buf.put(self.value.as_bytes());
+    }
+}
+
+impl CompactEncode for CompactString {
+    fn encode_compact(&self, buf: &mut bytes::BytesMut) {
+        let size_bytes = encode_zigzag(self.size_len_bytes);
+
+        buf.put(&size_bytes[..]);
+        buf.put(self.value.as_bytes());
     }
 }
 
