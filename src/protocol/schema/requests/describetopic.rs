@@ -102,7 +102,6 @@ impl Respond for DescribeTopicPartitions {
         message.put_u8(self.tag_buffer);
         let mut response = BytesMut::with_capacity(message.len() + 4);
         let len = (message.len()) as i32;
-        println!("{len}");
         response.put(&len.to_be_bytes()[..]);
         response.put(&message[..]);
         response.resize(response.capacity(), 0);

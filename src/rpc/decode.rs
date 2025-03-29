@@ -67,6 +67,23 @@ impl Decode<i32> for [u8] {
     }
 }
 
+impl Decode<i32> for i32 {
+    fn decode(buf: &[u8]) -> Result<i32, DecodeError> {
+        if buf.len() != 4 {
+            return Err(DecodeError::InvalidBuffer(
+                "Buffer must be exactly 4 bytes for i32".to_string(),
+            ));
+        }
+
+        match buf.try_into() {
+            Ok(bytes) => Ok(i32::from_be_bytes(bytes)),
+            Err(e) => Err(DecodeError::InvalidBuffer(format!(
+                "Failed to convert buffer to byte array: {e}"
+            ))),
+        }
+    }
+}
+
 impl Decode<u64> for [u8] {
     fn decode(buf: &[u8]) -> Result<u64, DecodeError> {
         if buf.len() != 8 {

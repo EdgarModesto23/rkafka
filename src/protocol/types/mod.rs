@@ -4,6 +4,8 @@ use compactstring::CompactValueParseError;
 pub mod compactarray;
 pub mod compactstring;
 pub mod nullstring;
+pub mod partition;
+pub mod record;
 pub mod topicstr;
 
 pub trait Offset {
@@ -49,4 +51,10 @@ pub fn encode_zigzag(value: u64) -> Vec<u8> {
 
 pub trait CompactEncode {
     fn encode_compact(&self, buf: &mut BytesMut);
+}
+
+impl Offset for i32 {
+    fn get_offset(&self) -> u64 {
+        4
+    }
 }
